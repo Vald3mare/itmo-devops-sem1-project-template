@@ -17,31 +17,27 @@ import (
 // HandlerPostPrices обрабатывает POST-запрос для загрузки данных
 func HandlerPostPrices(db *pgx.Conn) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Чтение zip-архива из тела запроса
 		file, _, err := r.FormFile("file")
 		if err != nil {
-			http.Error(w, "Failed to read file", http.StatusBadRequest)
+			http.Error(w, "ошибка чтения файла из запроса", http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
 
-		// Считывание файла в память
 		var buf bytes.Buffer
 		_, err = io.Copy(&buf, file)
 		if err != nil {
-			http.Error(w, "Failed to read file into buffer", http.StatusInternalServerError)
+			http.Error(w, "не удалось записать файл в буфер", http.StatusInternalServerError)
 			return
 		}
 		fileData := buf.Bytes()
 
-		// Создание zip-ридера
 		zipReader, err := zip.NewReader(bytes.NewReader(fileData), int64(len(fileData)))
 		if err != nil {
-			http.Error(w, "Failed to unzip file", http.StatusBadRequest)
+			http.Error(w, "не удалось разархивировать файл", http.StatusBadRequest)
 			return
 		}
 
-		// Поиск data.csv
 		var csvFile *zip.File
 		for _, f := range zipReader.File {
 			if strings.HasSuffix(f.Name, "data.csv") {
@@ -50,25 +46,23 @@ func HandlerPostPrices(db *pgx.Conn) http.HandlerFunc {
 			}
 		}
 		if csvFile == nil {
-			http.Error(w, "File 'data.csv' not found in archive", http.StatusBadRequest)
+			http.Error(w, "файл data.csv не был найден в архиве", http.StatusBadRequest)
 			return
 		}
 
-		// Чтение содержимого CSV
 		fileReader, err := csvFile.Open()
 		if err != nil {
-			http.Error(w, "Failed to open CSV file", http.StatusInternalServerError)
+			http.Error(w, "ошибка чтения файла data.csv", http.StatusInternalServerError)
 			return
 		}
 		defer fileReader.Close()
 
 		lines, err := csv.NewReader(fileReader).ReadAll()
 		if err != nil {
-			http.Error(w, "Failed to parse CSV file", http.StatusInternalServerError)
+			http.Error(w, "ошибка парсинга данных из csv файла", http.StatusInternalServerError)
 			return
 		}
 
-		// Обработка данных
 		var totalItems int
 		var totalPrice float64
 		categories := make(map[string]struct{})
@@ -86,7 +80,7 @@ func HandlerPostPrices(db *pgx.Conn) http.HandlerFunc {
 
 			price, err := strconv.ParseFloat(priceStr, 64)
 			if err != nil {
-				http.Error(w, "Invalid price format", http.StatusBadRequest)
+				http.Error(w, "некорретный формат цены", http.StatusBadRequest)
 				return
 			}
 
@@ -97,7 +91,7 @@ func HandlerPostPrices(db *pgx.Conn) http.HandlerFunc {
 				 SET name = EXCLUDED.name, category = EXCLUDED.category, price = EXCLUDED.price, create_date = EXCLUDED.create_date`,
 				id, name, category, price, createDate)
 			if err != nil {
-				http.Error(w, "Failed to process database data", http.StatusInternalServerError)
+				http.Error(w, "не удалось вставить данные в БД", http.StatusInternalServerError)
 				return
 			}
 
