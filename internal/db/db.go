@@ -3,23 +3,21 @@ package db
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
-var conn *pgxpool.Conn
 
-func ConnectToDB() {
+// InitDB устанавливает подключение к базе данных
+func InitDB() (*pgx.Conn, error) {
 	connStr := "postgres://validator:val1dat0r@localhost:5432/project-sem-1?sslmode=disable"
-	dbpool, err := pgxpool.New(context.Background(), connStr)
+	conn, err := pgx.Connect(context.Background(), connStr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
 	}
-	conn, err = dbpool.Acquire(context.Background())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to acquire a connection: %v\n", err)
-		os.Exit(1)
+
+	if err := conn.Ping(context.Background()); err != nil {
+		return nil, fmt.Errorf("ошибка при проверке подключения к БД: %w", err)
 	}
-	fmt.Println("DB connected successfully!")
+
+	return conn, nil
 }
