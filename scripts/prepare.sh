@@ -1,20 +1,24 @@
 #!/bin/bash
 
-# Используем переменные окружения из GitHub Actions
-PGHOST="localhost"
-PGPORT="5432"
-PGUSER="validator"
-PGPASSWORD="val1dat0r"
-PGDATABASE="project-sem-1"
+# Переменные окружения (можно переопределить в CI)
+PGHOST="${POSTGRES_HOST:-localhost}"
+PGPORT="${POSTGRES_PORT:-5432}"
+PGUSER="${POSTGRES_USER:-validator}"
+PGPASSWORD="${POSTGRES_PASSWORD:-val1dat0r}"
+PGDATABASE="${POSTGRES_DB:-project-sem-1}"
 
-# Ждем готовности PostgreSQL
-until pg_isready -h $PGHOST -p $PGPORT -U $PGUSER; do
-  echo "Waiting for PostgreSQL to start..."
+# Ожидание готовности PostgreSQL
+for i in {1..15}; do
+  echo "Checking PostgreSQL ($i/15)..."
+  if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; then
+    echo "✅ PostgreSQL ready!"
+    break
+  fi
   sleep 2
 done
 
-# Создаем таблицу (если не существует)
-psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE << EOF
+# Создание таблицы
+psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE" << EOF
 CREATE TABLE IF NOT EXISTS prices (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -24,5 +28,5 @@ CREATE TABLE IF NOT EXISTS prices (
 );
 EOF
 
-# Проверка создания таблицы
-psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "\dt+ prices"
+# Проверка
+psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE" -c "\dt+ prices"
