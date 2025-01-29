@@ -1,11 +1,10 @@
 #!/bin/bash
 
-# Экспорт переменных окружения для PostgreSQL
-export PGUSER=validator
-export PGPASSWORD=val1dat0r
-export PGDATABASE=project-sem-1
-export PGHOST=localhost
-export PGPORT=5432
+# Ждем готовности БД
+while ! pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do
+  echo "Waiting for database..."
+  sleep 2
+done
 
 # Запуск приложения
 go run cmd/main.go

@@ -1,16 +1,13 @@
 #!/bin/bash
 
-# Установка PostgreSQL
-sudo apt-get update
-sudo apt-get install -y postgresql postgresql-contrib
+# Ждем готовности PostgreSQL
+until pg_isready -h localhost -p 5432 -U validator; do
+  echo "Waiting for PostgreSQL..."
+  sleep 2
+done
 
-# Настройка пользователя и БД
-sudo -u postgres psql -c "CREATE USER validator WITH PASSWORD 'val1dat0r';"
-sudo -u postgres psql -c "CREATE DATABASE \"project-sem-1\" OWNER validator;"
-sudo -u postgres psql -d project-sem-1 -c "GRANT ALL PRIVILEGES ON DATABASE \"project-sem-1\" TO validator;"
-
-# Создание таблицы prices
-sudo -u postgres psql -d project-sem-1 << EOF
+# Создание таблиц
+psql -h localhost -U validator -d project-sem-1 << EOF
 CREATE TABLE IF NOT EXISTS prices (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -20,5 +17,5 @@ CREATE TABLE IF NOT EXISTS prices (
 );
 EOF
 
-# Права для пользователя
-sudo -u postgres psql -d project-sem-1 -c "GRANT ALL PRIVILEGES ON TABLE prices TO validator;"
+# Права пользователя
+psql -h localhost -U validator -d project-sem-1 -c "GRANT ALL PRIVILEGES ON TABLE prices TO validator;"
