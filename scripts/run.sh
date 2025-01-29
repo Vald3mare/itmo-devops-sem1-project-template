@@ -7,16 +7,20 @@ export PGDATABASE="${POSTGRES_DB:-project-sem-1}"
 export PGHOST="${POSTGRES_HOST:-localhost}"
 export PGPORT="${POSTGRES_PORT:-5432}"
 
+# Сборка приложения
+echo "🔨 Сборка приложения..."
+go build -o main cmd/main.go
+
 # Ожидание БД
 for i in {1..15}; do
-  echo "DB connection check ($i/15)..."
+  echo "Проверка подключения к БД ($i/15)..."
   if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; then
-    echo "✅ Database ready!"
+    echo "База данных готова!"
     break
   fi
   sleep 2
 done
 
 # Запуск приложения
-echo "🚀 Starting application..."
+echo "Запуск приложения..."
 exec ./main

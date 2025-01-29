@@ -11,7 +11,7 @@ PGDATABASE="${POSTGRES_DB:-project-sem-1}"
 for i in {1..15}; do
   echo "Checking PostgreSQL ($i/15)..."
   if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; then
-    echo "✅ PostgreSQL ready!"
+    echo "PostgreSQL ready!"
     break
   fi
   sleep 2
