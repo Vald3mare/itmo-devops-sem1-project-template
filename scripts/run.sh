@@ -1,4 +1,4 @@
 #!/bin/bash
 
-# Запуск приложения
-go run main.go
+go build -o server cmd/server/main.go
+./server5

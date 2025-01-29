@@ -22,7 +22,7 @@ func main() {
 	router.HandleFunc("/api/v0/prices", handlers.HandlerGetPrices(conn)).Methods("GET")
 	router.HandleFunc("/api/v0/prices", handlers.HandlerPostPrices(conn)).Methods("POST")
 
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	if err := http.ListenAndServe(":80", router); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
 }

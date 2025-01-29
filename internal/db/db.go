@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-
+	//в практикуме рекомендовали использоать этот драй
 	"github.com/jackc/pgx/v5"
 )
 
