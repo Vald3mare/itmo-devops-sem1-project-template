@@ -1,4 +1,11 @@
 #!/bin/bash
 
-go build -o server cmd/server/main.go
-./server5
+# Экспорт переменных окружения для PostgreSQL
+export PGUSER=validator
+export PGPASSWORD=val1dat0r
+export PGDATABASE=project-sem-1
+export PGHOST=localhost
+export PGPORT=5432
+
+# Запуск приложения
+go run cmd/main.go

@@ -4,21 +4,21 @@
 sudo apt-get update
 sudo apt-get install -y postgresql postgresql-contrib
 
-# Запуск PostgreSQL
-sudo service postgresql start
-
-# Создание пользователя и БД
+# Настройка пользователя и БД
 sudo -u postgres psql -c "CREATE USER validator WITH PASSWORD 'val1dat0r';"
 sudo -u postgres psql -c "CREATE DATABASE \"project-sem-1\" OWNER validator;"
+sudo -u postgres psql -d project-sem-1 -c "GRANT ALL PRIVILEGES ON DATABASE \"project-sem-1\" TO validator;"
 
-# Создание таблицы
-sudo -u postgres psql -d project-sem-1 -c "CREATE TABLE IF NOT EXISTS prices (
-    id TEXT,
-    created_at DATE,
-    product_name TEXT,
-    category TEXT,
-    price DECIMAL
-);"
+# Создание таблицы prices
+sudo -u postgres psql -d project-sem-1 << EOF
+CREATE TABLE IF NOT EXISTS prices (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    price NUMERIC(10, 2) NOT NULL,
+    create_date DATE NOT NULL
+);
+EOF
 
-# Права пользователя
+# Права для пользователя
 sudo -u postgres psql -d project-sem-1 -c "GRANT ALL PRIVILEGES ON TABLE prices TO validator;"
