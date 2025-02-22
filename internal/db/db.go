@@ -3,29 +3,48 @@ package db
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 	"os"
-	//в практикуме рекомендовали использоать этот драй
-	"github.com/jackc/pgx/v5"
+
+	"github.com/joho/godotenv"
 )
 
-// InitDB устанавливает подключение к базе данных
-func InitDB() (*pgx.Conn, error) {
-	connStr := fmt.Sprintf(
-        "postgres://%s:%s@%s:%s/%s?sslmode=disable",
-        os.Getenv("POSTGRES_USER"),
-        os.Getenv("POSTGRES_PASSWORD"),
-        os.Getenv("POSTGRES_HOST"),
-        os.Getenv("POSTGRES_PORT"),
-        os.Getenv("POSTGRES_DB"),
-    )
-	conn, err := pgx.Connect(context.Background(), connStr)
+// initDB инициализирует базу данных и создает таблицу prices
+func InitDB() error {
+	err := godotenv.Load("../../database.env")
 	if err != nil {
-		return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
+		log.Fatalf("Error loading .env file: %v", err)
+		return err
 	}
 
-	if err := conn.Ping(context.Background()); err != nil {
-		return nil, fmt.Errorf("ошибка при проверке подключения к БД: %w", err)
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+
+	connString := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
+		dbUser, dbPassword, dbName, dbHost, dbPort)
+
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		log.Fatalf("Unable to parse config: %v", err)
+		return err
 	}
 
-	return conn, nil
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		log.Fatalf("Unable to create connection pool: %v", err)
+		return err
+	}
+	defer pool.Close()
+
+	err = pool.Ping(context.Background())
+	if err != nil {
+		log.Fatalf("Unable to ping database: %v", err)
+	}
+
+	fmt.Println("Successfully connected to the database!")
+	return nil
 }
