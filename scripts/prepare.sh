@@ -1,34 +1,21 @@
 #!/bin/bash
 
-# Абсолютный путь к database.env
-ENV_FILE="/database.env"
+PGHOST="${POSTGRES_HOST:-localhost}"
+PGPORT="${POSTGRES_PORT:-5432}"
+PGUSER="${POSTGRES_USER:-validator}"
+PGPASSWORD="${POSTGRES_PASSWORD:-val1dat0r}"
+PGDATABASE="${POSTGRES_DB:-project-sem-1}"
 
-# Загружаем переменные окружения из database.env файла
-if [ -f "$ENV_FILE" ]; then
-    export $(grep -v '^#' "$ENV_FILE" | xargs)
-else
-    echo "Файл database.env не найден по пути: $ENV_FILE"
-    exit 1
-fi
-
-# Проверяем, что все необходимые переменные заданы
-if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
-    echo "Одна или несколько переменных окружения не заданы в database.env файле!"
-    exit 1
-fi
-
-# Ожидание готовности PostgreSQL
 for i in {1..15}; do
   echo "Checking PostgreSQL ($i/15)..."
-  if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; then
+  if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; then
     echo "PostgreSQL ready!"
     break
   fi
   sleep 2
 done
 
-# Создание таблицы
-psql "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME" << EOF
+psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE" << EOF
 CREATE TABLE IF NOT EXISTS prices (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -38,5 +25,4 @@ CREATE TABLE IF NOT EXISTS prices (
 );
 EOF
 
-# Проверка
-psql "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME" -c "\dt+ prices"g
+psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE" -c "\dt+ prices"
