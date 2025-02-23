@@ -9,12 +9,12 @@ PGDATABASE="${POSTGRES_DB:-project-sem-1}"
 
 ENV_FILE="/database.env"
 
-if [ -f "$ENV_FILE" ]; then
-    export $(grep -v '^#' "$ENV_FILE" | xargs)
-else
-    echo "Файл database.env не найден!"
-    exit 1
-fi
+#if [ -f "$ENV_FILE" ]; then
+#    export $(grep -v '^#' "$ENV_FILE" | xargs)
+#else
+#    echo "Файл database.env не найден!"
+#    exit 1
+#gifi
 
 # Ожидание готовности PostgreSQL
 for i in {1..15}; do
