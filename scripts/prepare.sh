@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Переменные окружения (можно переопределить в CI)
-#PGHOST="${POSTGRES_HOST:-localhost}"
-#PGPORT="${POSTGRES_PORT:-5432}"
-#PGUSER="${POSTGRES_USER:-validator}"
-#PGPASSWORD="${POSTGRES_PASSWORD:-val1dat0r}"
-#PGDATABASE="${POSTGRES_DB:-project-sem-1}"
+PGHOST="${POSTGRES_HOST:-localhost}"
+PGPORT="${POSTGRES_PORT:-5432}"
+PGUSER="${POSTGRES_USER:-validator}"
+PGPASSWORD="${POSTGRES_PASSWORD:-val1dat0r}"
+PGDATABASE="${POSTGRES_DB:-project-sem-1}"
 
 ENV_FILE="/database.env"
 
