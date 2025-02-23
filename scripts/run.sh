@@ -8,3 +8,5 @@ go get github.com/joho/godotenv
 
 APP_PATH="/cmd/api/main.go"
 BINARY_PATH="${GITHUB_WORKSPACE}/main"
+
+echo $BINARY_PATH
