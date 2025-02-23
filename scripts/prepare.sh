@@ -7,8 +7,8 @@
 #PGPASSWORD="${POSTGRES_PASSWORD:-val1dat0r}"
 #PGDATABASE="${POSTGRES_DB:-project-sem-1}"
 
-if [ -f ../../database.env ]; then
-    export $(grep -v '^#' ../../database.env | xargs)
+if [ -f ../database.env ]; then
+    export $(grep -v '^#' ../database.env | xargs)
 else
     echo "Файл database.env не найден!"
     exit 1
