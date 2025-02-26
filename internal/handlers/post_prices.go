@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,8 +18,6 @@ import (
 // HandlerPostPrices обрабатывает POST-запрос для загрузки цен
 func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Handling POST request for /api/v0/prices")
-
 		// Парсинг multipart/form-data запроса
 		err := r.ParseMultipartForm(10 << 20) // 10 MB
 		if err != nil {
@@ -26,15 +25,13 @@ func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		file, header, err := r.FormFile("file")
+		// Получение файла из формы
+		file, _, err := r.FormFile("file")
 		if err != nil {
 			http.Error(w, "Unable to get file from form", http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
-
-		// Логирование имени файла
-		fmt.Printf("Received file: %s\n", header.Filename)
 
 		// Чтение содержимого файла в память
 		fileBytes, err := io.ReadAll(file)
@@ -61,11 +58,9 @@ func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 		for _, zipFile := range zipReader.File {
 			// Пропуск файлов, которые не являются CSV
 			if !strings.HasSuffix(zipFile.Name, ".csv") {
-				fmt.Printf("Skipping non-CSV file: %s\n", zipFile.Name)
+				log.Printf("Skipping non-CSV file: %s\n", zipFile.Name)
 				continue
 			}
-
-			fmt.Printf("Processing CSV file: %s\n", zipFile.Name)
 
 			// Открытие файла в zip-архиве
 			fileInZip, err := zipFile.Open()
@@ -102,7 +97,7 @@ func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 					productID, productName, category, price, createdAt,
 				)
 				if err != nil {
-					fmt.Printf("Failed to insert record %d: %v\n", i, err)
+					log.Printf("Failed to insert record %d: %v\n", i, err)
 					continue
 				}
 
@@ -132,7 +127,6 @@ func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write(jsonResponse)
 
-		// Логирование успешного завершения
-		fmt.Println("Successfully processed file and returned JSON response")
+		log.Println("Successfully processed file and returned JSON response")
 	}
 }

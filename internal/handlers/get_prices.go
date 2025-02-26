@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,9 +15,6 @@ import (
 // HandlerGetPrices обрабатывает GET-запрос для получения данных из базы данных
 func HandlerGetPrices(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Логирование начала обработки запроса
-		fmt.Println("Handling GET request for /api/v0/prices")
-
 		// Извлечение данных из базы данных
 		rows, err := pool.Query(context.Background(), "SELECT product_id, product_name, category, price, created_at FROM prices")
 		if err != nil {
@@ -110,7 +107,6 @@ func HandlerGetPrices(pool *pgxpool.Pool) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write(zipData.Bytes())
 
-		// Логирование успешной отправки файла
-		fmt.Println("Successfully sent zip archive to client")
+		log.Println("Successfully sent zip archive to client")
 	}
 }
