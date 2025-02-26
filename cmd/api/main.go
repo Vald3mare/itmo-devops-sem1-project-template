@@ -14,13 +14,21 @@ func main() {
 }
 
 func run() error {
-	err := db.InitDB()
+	// Инициализация пула соединений с базой данных
+	pool, err := db.InitDB()
 	if err != nil {
 		return err
 	}
+	defer pool.Close()
+
+	// Инициализация роутера
 	r := mux.NewRouter()
-	r.HandleFunc("/api/v0/prices", handlers.HandlerPostPrices()).Methods("POST")
-	r.HandleFunc("/api/v0/prices", handlers.HandlerGetPrices()).Methods("GET")
+
+	// Передача пула соединений в хендлеры
+	r.HandleFunc("/api/v0/prices", handlers.HandlerPostPrices(pool)).Methods("POST")
+	r.HandleFunc("/api/v0/prices", handlers.HandlerGetPrices(pool)).Methods("GET")
+
+	// Запуск сервера
 	err = http.ListenAndServe(`:80`, r)
 	if err != nil {
 		return err

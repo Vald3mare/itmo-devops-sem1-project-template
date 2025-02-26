@@ -3,19 +3,17 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
-// initDB инициализирует базу данных и создает таблицу prices
-func InitDB() error {
+// InitDB инициализирует пул соединений с PostgreSQL
+func InitDB() (*pgxpool.Pool, error) {
 	err := godotenv.Load("../../database.env")
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-		return err
+		return nil, fmt.Errorf("error loading .env file: %v", err)
 	}
 
 	dbUser := os.Getenv("DB_USER")
@@ -29,22 +27,19 @@ func InitDB() error {
 
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		log.Fatalf("Unable to parse config: %v", err)
-		return err
+		return nil, fmt.Errorf("unable to parse config: %v", err)
 	}
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v", err)
-		return err
+		return nil, fmt.Errorf("unable to create connection pool: %v", err)
 	}
-	defer pool.Close()
 
 	err = pool.Ping(context.Background())
 	if err != nil {
-		log.Fatalf("Unable to ping database: %v", err)
+		return nil, fmt.Errorf("unable to ping database: %v", err)
 	}
 
 	fmt.Println("Successfully connected to the database!")
-	return nil
+	return pool, nil
 }
