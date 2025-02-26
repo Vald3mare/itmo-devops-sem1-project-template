@@ -9,7 +9,6 @@ go get github.com/joho/godotenv
 source database.env
 
 APP_PATH="/cmd/api/main.go"
-go run main.go
 BINARY_PATH="${GITHUB_WORKSPACE}/main"
 
 echo $BINARY_PATH
