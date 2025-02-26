@@ -84,20 +84,21 @@ func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 					continue
 				}
 
-				// Парсинг данных из CSV
-				productID, _ := strconv.Atoi(record[0])       // ID продукта
-				productName := record[1]                      // Название продукта
-				category := record[2]                         // Категория продукта
-				price, _ := strconv.ParseFloat(record[3], 64) // Цена продукта
-				createdAt := record[4]                        // Дата создания
+				productID, _ := strconv.Atoi(record[0])
+				productName := record[1]
+				category := record[2]
+				price, _ := strconv.ParseFloat(record[3], 64)
+				createdAt := record[4]
 
-				// Запись данных в PostgreSQL
+				// Вставка в БД
 				_, err := pool.Exec(context.Background(),
-					"INSERT INTO prices (product_id, product_name, category, price, created_at) VALUES ($1, $2, $3, $4, $5)",
+					`INSERT INTO prices 
+                        (product_id, product_name, category, price, created_at) 
+                     VALUES ($1, $2, $3, $4, $5)`,
 					productID, productName, category, price, createdAt,
 				)
 				if err != nil {
-					log.Printf("Failed to insert record %d: %v\n", i, err)
+					log.Printf("Ошибка вставки: %v", err)
 					continue
 				}
 

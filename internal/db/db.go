@@ -13,7 +13,7 @@ import (
 // InitDB инициализирует пул соединений с PostgreSQL
 func InitDB() (*pgxpool.Pool, error) {
 	// Загрузка переменных окружения из файла .env
-	err := godotenv.Load("database.env")
+	err := godotenv.Load("../../database.env")
 	if err != nil {
 		log.Fatalf("Ошибка загрузки .env файла: %v", err)
 		return nil, err

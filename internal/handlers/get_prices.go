@@ -16,7 +16,9 @@ import (
 func HandlerGetPrices(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Извлечение данных из базы данных
-		rows, err := pool.Query(context.Background(), "SELECT product_id, product_name, category, price, created_at FROM prices")
+		rows, err := pool.Query(context.Background(),
+			`SELECT product_id, product_name, category, price, created_at FROM prices`,
+		)
 		if err != nil {
 			http.Error(w, "Unable to query database: "+err.Error(), http.StatusInternalServerError)
 			return
