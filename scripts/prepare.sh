@@ -22,12 +22,11 @@ DROP TABLE IF EXISTS prices;
 CREATE TABLE prices (
     id SERIAL PRIMARY KEY,
     product_id INT NOT NULL,
+    created_at DATE NOT NULL,
     product_name TEXT NOT NULL,
     category TEXT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    created_at DATE NOT NULL
+    price DECIMAL(10,2) NOT NULL
 );
 EOF
 
-# Проверка
-psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE" -c "\dt+ prices"
+echo "Database setup completed!"
