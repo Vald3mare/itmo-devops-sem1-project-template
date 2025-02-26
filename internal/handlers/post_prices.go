@@ -17,7 +17,6 @@ import (
 // HandlerPostPrices обрабатывает POST-запрос для загрузки цен
 func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Логирование начала обработки запроса
 		fmt.Println("Handling POST request for /api/v0/prices")
 
 		// Парсинг multipart/form-data запроса
@@ -27,7 +26,6 @@ func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		// Получение файла из формы
 		file, header, err := r.FormFile("file")
 		if err != nil {
 			http.Error(w, "Unable to get file from form", http.StatusBadRequest)
@@ -119,7 +117,7 @@ func HandlerPostPrices(pool *pgxpool.Pool) http.HandlerFunc {
 		response := map[string]interface{}{
 			"total_items":      totalItems,
 			"total_categories": len(uniqueCategories), // Количество уникальных категорий
-			"total_price":      totalPrice,
+			"total_price":      int(totalPrice),       // Округляем totalPrice до целого числа
 		}
 
 		// Преобразование ответа в JSON
