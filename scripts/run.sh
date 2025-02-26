@@ -1,7 +1,15 @@
 #!/bin/bash
 
-# Загрузка переменных окружения
+export PATH=$PATH:/usr/local/go/bin
+go version
+
+go get github.com/jackc/pgx/v5
+go get github.com/joho/godotenv
+
 source database.env
 
-# Запуск приложения
+APP_PATH="/cmd/api/main.go"
 go run main.go
+BINARY_PATH="${GITHUB_WORKSPACE}/main"
+
+echo $BINARY_PATH
