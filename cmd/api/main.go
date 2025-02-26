@@ -29,7 +29,7 @@ func run() error {
 	r.HandleFunc("/api/v0/prices", handlers.HandlerGetPrices(pool)).Methods("GET")
 
 	// Запуск сервера
-	err = http.ListenAndServe(`:80`, r)
+	err = http.ListenAndServe(`:8080`, r)
 	if err != nil {
 		return err
 	}
