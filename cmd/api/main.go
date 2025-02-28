@@ -19,7 +19,11 @@ const (
 )
 
 func main() {
-	r := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+
+	r := gin.New()
+
+	r.Use(gin.Recovery())
 
 	r.POST("/api/v0/prices", handlePost)
 	r.GET("/api/v0/prices", handleGet)
