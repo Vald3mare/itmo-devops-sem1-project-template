@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Определение пути до файла database.env
-ENV_FILE="../../database.env"
+ENV_FILE="database.env"
 
 # Загрузка переменных окружения из файла database.env
 if [ -f "$ENV_FILE" ]; then
