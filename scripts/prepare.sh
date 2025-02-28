@@ -19,7 +19,3 @@ sudo -u postgres psql -d project-sem-1 -c "
         category TEXT,
         price NUMERIC
     );"
-
-# Настройка прав доступа
-echo "host all all 127.0.0.1/32 md5" | sudo tee -a /etc/postgresql/*/main/pg_hba.conf
-sudo service postgresql restart
