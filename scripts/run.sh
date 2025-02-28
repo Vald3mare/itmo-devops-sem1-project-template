@@ -3,7 +3,8 @@
 set -e
 
 echo "Building the application..."
-cd main
+cd cmd
+cd api
 go mod tidy
 go build -o app main.go
 
