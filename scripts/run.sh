@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # Запуск сервера
-go run cmd/server/main.go
+go run cmd/api/main.go
