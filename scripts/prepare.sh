@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Определение пути до файла database.env
 ENV_FILE="database.env"
 
