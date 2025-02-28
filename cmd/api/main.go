@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"project-sem/internal/db"
 	"project-sem/internal/handlers"
 
 	_ "github.com/lib/pq"
@@ -20,7 +19,7 @@ const (
 	dbName     = "project-sem-1"
 )
 
-var database *sql.DB
+var db *sql.DB
 
 func main() {
 	if err := run(); err != nil {
@@ -31,13 +30,13 @@ func main() {
 func run() error {
 	var err error
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPassword, dbName)
-	database, err = sql.Open("postgres", connStr)
+	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
 	}
-	defer database.Close()
+	defer db.Close()
 
-	if err := db.InitDB(); err != nil {
+	if err := InitDB(); err != nil {
 		return err
 	}
 
@@ -50,4 +49,20 @@ func run() error {
 		return err
 	}
 	return nil
+}
+
+func InitDB() error {
+	// Проверяем подключение
+	if err := db.Ping(); err != nil {
+		return err
+	}
+
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS prices (
+        id SERIAL PRIMARY KEY,
+        product_name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        price NUMERIC(10,2) NOT NULL,
+        creation_date timestamp NOT NULL
+    )`)
+	return err
 }
