@@ -1,26 +1,23 @@
 package db
 
 import (
-	"context"
-	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"os"
+	"database/sql"
 )
 
-func InitDB() (*pgxpool.Pool, error) {
-	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_NAME"),
-	)
+var database *sql.DB
 
-	pool, err := pgxpool.New(context.Background(), connString)
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to database: %v", err)
+func InitDB() error {
+	// Проверяем подключение
+	if err := database.Ping(); err != nil {
+		return err
 	}
 
-	return pool, nil
+	_, err := database.Exec(`CREATE TABLE IF NOT EXISTS prices (
+        id SERIAL PRIMARY KEY,
+        product_name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        price NUMERIC(10,2) NOT NULL,
+        creation_date timestamp NOT NULL
+    )`)
+	return err
 }

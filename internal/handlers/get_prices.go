@@ -3,112 +3,131 @@ package handlers
 import (
 	"archive/zip"
 	"bytes"
-	"context"
+	"database/sql"
 	"encoding/csv"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 )
 
+var db *sql.DB
+
 // HandlerGetPrices обрабатывает GET-запрос для получения данных из базы данных
-func HandlerGetPrices(pool *pgxpool.Pool) http.HandlerFunc {
+func HandlerGetPrices() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Извлечение данных из базы данных
-		rows, err := pool.Query(context.Background(),
-			`SELECT product_id, product_name, category, price, created_at FROM prices`,
-		)
+		// Запрашиваем все данные из БД
+		rows, err := db.Query(`SELECT id, product_name, category, price, creation_date FROM prices`)
 		if err != nil {
-			http.Error(w, "Unable to query database: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Failed to query database", http.StatusInternalServerError)
 			return
 		}
 		defer rows.Close()
 
-		// Создание CSV-файла в памяти
-		var csvData bytes.Buffer
-		csvWriter := csv.NewWriter(&csvData)
+		// Сохраняем данные в память
+		type Product struct {
+			ID           int
+			Name         string
+			Category     string
+			Price        float64
+			CreationDate string
+		}
+		var products []Product
 
-		// Запись заголовка CSV
-		csvWriter.Write([]string{"id", "name", "category", "price", "create_date"})
-
-		// Запись данных в CSV
 		for rows.Next() {
-			var (
-				productID   int
-				productName string
-				category    string
-				price       float64
-				createdAt   time.Time
-			)
-
-			// Сканирование данных из строки
-			err := rows.Scan(&productID, &productName, &category, &price, &createdAt)
+			var p Product
+			err := rows.Scan(&p.ID, &p.Name, &p.Category, &p.Price, &p.CreationDate)
 			if err != nil {
-				http.Error(w, "Unable to scan row: "+err.Error(), http.StatusInternalServerError)
+				log.Println("Error: Failed to scan row:", err)
+				http.Error(w, "Failed to scan row", http.StatusInternalServerError)
 				return
 			}
+			products = append(products, p)
+		}
 
-			// Преобразование данных в строки
-			record := []string{
-				strconv.Itoa(productID),
-				productName,
-				category,
-				strconv.FormatFloat(price, 'f', 2, 64),
-				createdAt.Format("2006-01-02"),
+		if err = rows.Err(); err != nil {
+			log.Println("Error: Error occurred while iterating over rows:", err)
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("Loaded %d products from database", len(products))
+
+		// Создаем CSV в памяти
+		var csvBuffer bytes.Buffer
+		writer := csv.NewWriter(&csvBuffer)
+
+		// Записываем заголовок
+		err = writer.Write([]string{"id", "name", "category", "price", "create_date"})
+		if err != nil {
+			log.Println("Error: Failed to write CSV header:", err)
+			http.Error(w, "Failed to write CSV header", http.StatusInternalServerError)
+			return
+		}
+
+		// Записываем строки
+		for _, p := range products {
+			err = writer.Write([]string{
+				strconv.Itoa(p.ID),
+				p.Name,
+				p.Category,
+				fmt.Sprintf("%.2f", p.Price),
+				p.CreationDate,
+			})
+			if err != nil {
+				log.Println("Error: Failed to write CSV row:", err)
+				http.Error(w, "Failed to write CSV row", http.StatusInternalServerError)
+				return
 			}
-
-			// Запись строки в CSV
-			csvWriter.Write(record)
 		}
+		writer.Flush()
 
-		// Проверка на ошибки после завершения итерации
-		if err := rows.Err(); err != nil {
-			http.Error(w, "Error after scanning rows: "+err.Error(), http.StatusInternalServerError)
+		if err := writer.Error(); err != nil {
+			log.Println("Error: CSV writing error:", err)
+			http.Error(w, "CSV writing error", http.StatusInternalServerError)
 			return
 		}
 
-		// Завершение записи CSV
-		csvWriter.Flush()
-		if err := csvWriter.Error(); err != nil {
-			http.Error(w, "Unable to write CSV data: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+		log.Println("CSV file created in memory")
 
-		// Создание zip-архива в памяти
-		var zipData bytes.Buffer
-		zipWriter := zip.NewWriter(&zipData)
+		// Создаем ZIP-архив в памяти
+		var zipBuffer bytes.Buffer
+		zipWriter := zip.NewWriter(&zipBuffer)
 
-		// Добавление CSV-файла в архив
-		fileWriter, err := zipWriter.Create("data.csv")
+		csvFile, err := zipWriter.Create("data.csv")
 		if err != nil {
-			http.Error(w, "Unable to create file in zip archive: "+err.Error(), http.StatusInternalServerError)
+			log.Println("Error: Failed to create CSV inside ZIP:", err)
+			http.Error(w, "Failed to create CSV inside ZIP", http.StatusInternalServerError)
 			return
 		}
 
-		// Запись данных CSV в файл внутри архива
-		_, err = fileWriter.Write(csvData.Bytes())
+		_, err = csvFile.Write(csvBuffer.Bytes())
 		if err != nil {
-			http.Error(w, "Unable to write CSV data to zip archive: "+err.Error(), http.StatusInternalServerError)
+			log.Println("Error: Failed to write CSV to ZIP:", err)
+			http.Error(w, "Failed to write CSV to ZIP", http.StatusInternalServerError)
 			return
 		}
 
-		// Завершение создания zip-архива
 		err = zipWriter.Close()
 		if err != nil {
-			http.Error(w, "Unable to close zip archive: "+err.Error(), http.StatusInternalServerError)
+			log.Println("Error: Failed to close ZIP archive:", err)
+			http.Error(w, "Failed to close ZIP archive", http.StatusInternalServerError)
 			return
 		}
 
-		// Установка заголовков для скачивания файла
-		w.Header().Set("Content-Disposition", "attachment; filename=data.zip")
+		log.Println("ZIP archive created in memory")
+
 		w.Header().Set("Content-Type", "application/zip")
-		w.Header().Set("Content-Length", strconv.Itoa(zipData.Len())) // Указываем размер файла
+		w.Header().Set("Content-Disposition", "attachment; filename=data.zip")
+		w.Header().Set("Content-Length", strconv.Itoa(zipBuffer.Len()))
+		_, err = w.Write(zipBuffer.Bytes())
 
-		// Отправка zip-архива клиенту
-		w.WriteHeader(http.StatusOK)
-		w.Write(zipData.Bytes())
+		if err != nil {
+			log.Println("Error: Failed to send ZIP file:", err)
+			http.Error(w, "Failed to send ZIP file", http.StatusInternalServerError)
+			return
+		}
 
-		log.Println("Successfully sent zip archive to client")
+		log.Println("ZIP file sent successfully")
 	}
 }
