@@ -1,44 +1,33 @@
 #!/bin/bash
 
+# prepare.sh
+# This script installs dependencies and prepares the PostgreSQL database.
+
 set -e
 
-# Определение пути до файла database.env
-ENV_FILE="database.env"
+PGHOST="localhost"
+PGPORT=5432
+PGUSER="validator"
+PGPASSWORD="val1dat0r"
+DBNAME="project-sem-1"
 
-# Загрузка переменных окружения из файла database.env
-if [ -f "$ENV_FILE" ]; then
-  echo "Загрузка переменных окружения из файла $ENV_FILE..."
-  source "$ENV_FILE"
-else
-  echo "Файл $ENV_FILE не найден."
-  exit 1
-fi
-
-echo "Установка зависимостей..."
-go mod download
-
-# Настройка базы данных PostgreSQL
-echo "Настройка базы данных PostgreSQL..."
-
-# Создание базы данных, если она не существует
-echo "Проверка установки PostgreSQL..."
+echo "Checking if PostgreSQL is running..."
 if pg_isready -q -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; then
-    echo "PostgreSQL уже установлен."
+    echo "PostgreSQL is already running. Skipping startup."
 else
-    echo "PostgreSQL не установлен. Запуск установки..."
+    echo "PostgreSQL is not running. Installing and starting..."
     sudo apt-get update
     sudo apt-get install -y golang-go postgresql postgresql-contrib unzip curl
     sudo service postgresql start
 fi
 
-# Проверка наличия базы данных project-sem-1
-echo "Проверка наличия бд 'project-sem-1'..."
+echo "Checking if database 'project-sem-1' exists..."
 DB_EXISTS=$(PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -h "$PGHOST" -p "$PGPORT" -d "$DBNAME" -tAc "SELECT 1 FROM pg_database WHERE datname='project-sem-1'")
 
 if [ "$DB_EXISTS" == "1" ]; then
-    echo "База данных 'project-sem-1' уже существует. Пропускаем процесс инициализации..."
+    echo "Database 'project-sem-1' already exists. Skipping creation."
 else
-    echo "Инициализируем базу данных 'project-sem-1'..."
+    echo "Creating database 'project-sem-1'..."
     psql -U "$PGUSER" -h "$PGHOST" -p "$PGPORT" -d "$DBNAME" <<EOF
     CREATE DATABASE "project-sem-1";
     CREATE USER validator WITH PASSWORD 'val1dat0r';
@@ -46,14 +35,13 @@ else
 EOF
 fi
 
-# Проверка наличия таблицы prices
 echo "Checking if table 'prices' exists..."
 TABLE_EXISTS=$(PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -h "$PGHOST" -p "$PGPORT" -d "$DBNAME" -tAc "SELECT to_regclass('public.prices')")
 
 if [ "$TABLE_EXISTS" == "public.prices" ]; then
-    echo "Таблица 'prices' уже существует. Пропускаем инициализацию..."
+    echo "Table 'prices' already exists. Skipping creation."
 else
-    echo "Инициализация таблицы 'prices'..."
+    echo "Creating table 'prices'..."
     PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -h "$PGHOST" -p "$PGPORT" -d "$DBNAME" <<EOF
     ALTER SCHEMA public OWNER TO validator;
     GRANT ALL ON SCHEMA public TO validator;
@@ -71,4 +59,5 @@ else
 EOF
 fi
 
-echo "Подготовка окружения завершена."
+echo "PostgreSQL is now accessible externally and locally with proper permissions."
+echo "Preparation complete."

@@ -2,11 +2,14 @@
 
 set -e
 
-echo "Билдинг приложения..."
-cd cmd
-cd api
+echo "Building the application..."
+cd main
 go mod tidy
 go build -o app main.go
 
-echo "Приложение запущено успешно."
+
+echo "Starting the application in background..."
+nohup ./app > app.log 2>&1 &
+
+echo "Application started successfully in background."
 echo "Logs are being written to app.log"
