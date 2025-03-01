@@ -5,7 +5,7 @@ cd ${GITHUB_WORKSPACE}  # Явное указание рабочей дирек�
 ls -la
 go build -o server ./cmd/api/main.go
 
-echo "Starting the application in background..."
+echo "Starting the application in background."
 nohup ./server > app.log 2>&1 &
 echo "Application started successfully in background."
 echo "PID: $!"
