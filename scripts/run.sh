@@ -1,14 +1,8 @@
 #!/bin/bash
-
 echo "Building the application..."
-cd сmd
-cd api
-go mod tidy
-go build -o app main.go
-./cmd/api/app
+go build -o server cmd/server/main.go
 
 echo "Starting the application in background..."
-nohup ./app > app.log 2>&1 &
-
+nohup ./server > app.log 2>&1 &
 echo "Application started successfully in background."
 echo "Logs are being written to app.log"
