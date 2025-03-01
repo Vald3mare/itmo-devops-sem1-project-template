@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
 	"project-sem/internal/myDB"
 )
 
@@ -30,6 +29,9 @@ func HandlerGetPrices() http.HandlerFunc {
 
 		writer := csv.NewWriter(csvFile)
 		defer writer.Flush()
+
+		// Write header
+		writer.Write([]string{"id", "creation_date", "product_name", "category", "price"})
 
 		for rows.Next() {
 			var id, date, name, category string

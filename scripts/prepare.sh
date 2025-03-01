@@ -4,6 +4,7 @@ set -e
 go mod download
 
 psql -U validator -d project-sem-1 -h localhost -p 5432 <<-EOSQL
+DROP TABLE IF EXISTS prices;
 CREATE TABLE IF NOT EXISTS prices (
     product_id TEXT,
     creation_date DATE,

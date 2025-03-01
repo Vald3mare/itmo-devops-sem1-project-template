@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -24,14 +25,15 @@ func InitDB() error {
 	}
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS prices (
-    product_id TEXT,
-    creation_date DATE,  // <--- Проверьте написание!
-    product_name TEXT,
-    category TEXT,
-    price NUMERIC
-)`)
+		product_id TEXT,
+		creation_date DATE,
+		product_name TEXT,
+		category TEXT,
+		price NUMERIC
+	)`)
+
 	if err != nil {
-		return fmt.Errorf("failed to create table: %w", err)
+		return fmt.Errorf("failed to create table: %v", err)
 	}
 
 	return nil
@@ -59,19 +61,31 @@ func InsertPrices(records [][]string) (int, int, float64, error) {
 			continue
 		}
 
-		price, err := strconv.ParseFloat(record[4], 64)
-		if err != nil {
-			log.Printf("Invalid price format: %s", record[4])
+		productID := record[0]
+		productName := record[1]
+		category := record[2]
+		priceStr := record[3]
+		creationDate := record[4]
+
+		if !isValidDate(creationDate) {
+			log.Printf("Invalid date format: %s", creationDate)
 			continue
 		}
 
-		if _, err = stmt.Exec(record[0], record[1], record[2], record[3], price); err != nil {
+		price, err := strconv.ParseFloat(priceStr, 64)
+		if err != nil {
+			log.Printf("Invalid price format: %s", priceStr)
+			continue
+		}
+
+		_, err = stmt.Exec(productID, creationDate, productName, category, price)
+		if err != nil {
 			log.Printf("Failed to insert record: %v, error: %v", record, err)
 			continue
 		}
 
 		totalItems++
-		categories[record[3]] = struct{}{}
+		categories[category] = struct{}{}
 		totalPrice += price
 	}
 
@@ -84,4 +98,9 @@ func InsertPrices(records [][]string) (int, int, float64, error) {
 
 func GetAllPrices() (*sql.Rows, error) {
 	return db.Query("SELECT product_id, creation_date, product_name, category, price FROM prices ORDER BY product_id")
+}
+
+func isValidDate(dateStr string) bool {
+	_, err := time.Parse("2006-01-02", dateStr)
+	return err == nil
 }

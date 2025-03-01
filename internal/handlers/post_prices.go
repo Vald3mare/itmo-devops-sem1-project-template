@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-
 	"project-sem/internal/myDB"
 )
 
@@ -66,6 +65,13 @@ func HandlerPostPrices() http.HandlerFunc {
 		defer rc.Close()
 
 		reader := csv.NewReader(rc)
+
+		// Skip header
+		if _, err := reader.Read(); err != nil {
+			http.Error(w, "Error reading header: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		records, err := reader.ReadAll()
 		if err != nil {
 			http.Error(w, "Error reading csv: "+err.Error(), http.StatusInternalServerError)
