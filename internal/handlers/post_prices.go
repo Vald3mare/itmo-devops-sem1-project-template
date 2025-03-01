@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"project-sem/internal/myDB"
+	"strings"
 )
 
 // HandlerGetPrices обрабатывает GET-запрос для получения данных из базы данных
@@ -47,7 +48,7 @@ func HandlerPostPrices() http.HandlerFunc {
 
 		var csvFile *zip.File
 		for _, f := range zipReader.File {
-			if f.Name == "data.csv" {
+			if strings.HasSuffix(f.Name, ".csv") {
 				csvFile = f
 				break
 			}
