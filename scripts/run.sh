@@ -1,9 +1,12 @@
 #!/bin/bash
 ls -la
 echo "Building the application..."
-go build -o server cmd/server/main.go
+cd ${GITHUB_WORKSPACE}  # Явное указание рабочей директории
+ls -la
+go build -o server ./cmd/api/main.go
 
 echo "Starting the application in background..."
 nohup ./server > app.log 2>&1 &
 echo "Application started successfully in background."
+echo "PID: $!"
 echo "Logs are being written to app.log"
