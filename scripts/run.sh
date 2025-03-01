@@ -3,8 +3,8 @@
 echo "Building the application..."
 cd сmd/api
 go mod tidy
-go build -o api main.go
-
+go build -o app main.go
+./app
 
 echo "Starting the application in background..."
 nohup ./app > app.log 2>&1 &
