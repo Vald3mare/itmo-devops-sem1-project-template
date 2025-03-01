@@ -15,33 +15,33 @@ import (
 func HandlerPostPrices() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseMultipartForm(10 << 20); err != nil {
-			http.Error(w, "Error parsing multipart form: "+err.Error(), http.StatusBadRequest)
+			http.Error(w, "Error parsing form: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		file, _, err := r.FormFile("file")
 		if err != nil {
-			http.Error(w, "Error retrieving file: "+err.Error(), http.StatusBadRequest)
+			http.Error(w, "File upload error: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
 
 		tempFile, err := os.CreateTemp("", "upload-*.zip")
 		if err != nil {
-			http.Error(w, "Error creating temp file: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Temp file error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer os.Remove(tempFile.Name())
 		defer tempFile.Close()
 
 		if _, err = io.Copy(tempFile, file); err != nil {
-			http.Error(w, "Error saving file: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "File save error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		zipReader, err := zip.OpenReader(tempFile.Name())
 		if err != nil {
-			http.Error(w, "Error opening zip: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "ZIP read error: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 		defer zipReader.Close()
@@ -54,34 +54,27 @@ func HandlerPostPrices() http.HandlerFunc {
 			}
 		}
 		if csvFile == nil {
-			http.Error(w, "data.csv not found in archive", http.StatusBadRequest)
+			http.Error(w, "CSV file not found", http.StatusBadRequest)
 			return
 		}
 
 		rc, err := csvFile.Open()
 		if err != nil {
-			http.Error(w, "Error opening csv: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "CSV open error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer rc.Close()
 
 		reader := csv.NewReader(rc)
-
-		// Skip header
-		if _, err := reader.Read(); err != nil {
-			http.Error(w, "Error reading header: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
 		records, err := reader.ReadAll()
 		if err != nil {
-			http.Error(w, "Error reading csv: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "CSV parse error: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		totalItems, totalCategories, totalPrice, err := myDB.InsertPrices(records)
 		if err != nil {
-			http.Error(w, "Error inserting data: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "DB insert error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -93,7 +86,7 @@ func HandlerPostPrices() http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		if err = json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "JSON encode error: "+err.Error(), http.StatusInternalServerError)
 		}
 	}
 }

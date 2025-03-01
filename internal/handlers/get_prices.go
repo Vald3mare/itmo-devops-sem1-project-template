@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"project-sem/internal/myDB"
 )
 
 var db *sql.DB
@@ -15,18 +16,9 @@ var db *sql.DB
 // HandlerGetPrices обрабатывает GET-запрос для получения данных из базы данных
 func HandlerGetPrices() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query(`
-            SELECT 
-                product_id,
-                product_name,
-                category,
-                price,
-                TO_CHAR(creation_date, 'YYYY-MM-DD') 
-            FROM prices
-            ORDER BY product_id
-        `)
+		rows, err := myDB.GetAllPrices()
 		if err != nil {
-			log.Printf("Database error: %v", err)
+			log.Printf("DB query error: %v", err)
 			http.Error(w, "Database error", http.StatusInternalServerError)
 			return
 		}
@@ -35,9 +27,14 @@ func HandlerGetPrices() http.HandlerFunc {
 		var csvBuffer bytes.Buffer
 		writer := csv.NewWriter(&csvBuffer)
 
-		// Заголовок согласно требованиям
-		writer.Write([]string{"id", "name", "category", "price", "create_date"})
+		// Write CSV header
+		if err := writer.Write([]string{"id", "name", "category", "price", "create_date"}); err != nil {
+			log.Printf("CSV header error: %v", err)
+			http.Error(w, "CSV generation error", http.StatusInternalServerError)
+			return
+		}
 
+		// Process rows
 		for rows.Next() {
 			var id, name, category, date string
 			var price float64
@@ -47,30 +44,47 @@ func HandlerGetPrices() http.HandlerFunc {
 				continue
 			}
 
-			writer.Write([]string{
+			if err := writer.Write([]string{
 				id,
 				name,
 				category,
 				fmt.Sprintf("%.2f", price),
 				date,
-			})
+			}); err != nil {
+				log.Printf("CSV write error: %v", err)
+				continue
+			}
 		}
 		writer.Flush()
 
+		// Create ZIP in memory
 		var zipBuffer bytes.Buffer
 		zipWriter := zip.NewWriter(&zipBuffer)
-
-		csvFile, _ := zipWriter.Create("data.csv")
-		csvFile.Write(csvBuffer.Bytes())
-
-		if err := zipWriter.Close(); err != nil {
-			log.Printf("Zip close error: %v", err)
+		dataFile, err := zipWriter.Create("data.csv")
+		if err != nil {
+			log.Printf("ZIP create error: %v", err)
 			http.Error(w, "Archive error", http.StatusInternalServerError)
 			return
 		}
 
+		if _, err := dataFile.Write(csvBuffer.Bytes()); err != nil {
+			log.Printf("ZIP write error: %v", err)
+			http.Error(w, "Archive error", http.StatusInternalServerError)
+			return
+		}
+
+		if err := zipWriter.Close(); err != nil {
+			log.Printf("ZIP close error: %v", err)
+			http.Error(w, "Archive error", http.StatusInternalServerError)
+			return
+		}
+
+		// Set headers and send response
 		w.Header().Set("Content-Type", "application/zip")
 		w.Header().Set("Content-Disposition", "attachment; filename=data.zip")
-		w.Write(zipBuffer.Bytes())
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", zipBuffer.Len()))
+		if _, err := w.Write(zipBuffer.Bytes()); err != nil {
+			log.Printf("Response write error: %v", err)
+		}
 	}
 }
