@@ -53,8 +53,6 @@ func InsertPrices(records [][]string) (int, int, float64, error) {
 	defer stmt.Close()
 
 	totalItems := 0
-	categories := make(map[string]struct{})
-	var totalPrice float64
 
 	for _, record := range records {
 		if len(record) != 5 {
@@ -85,15 +83,26 @@ func InsertPrices(records [][]string) (int, int, float64, error) {
 		}
 
 		totalItems++
-		categories[category] = struct{}{}
-		totalPrice += price
 	}
 
 	if err = tx.Commit(); err != nil {
 		return 0, 0, 0, fmt.Errorf("commit failed: %w", err)
 	}
 
-	return totalItems, len(categories), totalPrice, nil
+	// Получаем агрегированные данные через SQL
+	var totalCategories int
+	var totalPrice float64
+	err = db.QueryRow(`
+		SELECT 
+			COUNT(DISTINCT category),
+			COALESCE(SUM(price), 0) 
+		FROM prices
+	`).Scan(&totalCategories, &totalPrice)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to get statistics: %w", err)
+	}
+
+	return totalItems, totalCategories, totalPrice, nil
 }
 
 func GetAllPrices() (*sql.Rows, error) {
