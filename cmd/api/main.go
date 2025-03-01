@@ -17,7 +17,7 @@ func main() {
 }
 
 func run() error {
-	if err := db.InitDB(); err != nil {
+	if err := myDB.InitDB(); err != nil {
 		return err
 	}
 
