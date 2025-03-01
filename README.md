@@ -22,3 +22,5 @@
 ```bash
 git clone https://github.com/Vald3mare/itmo-devops-sem1-project-template.git
 cd itmo-devops-sem1-project-template
+сd cmd/api
+go run .
