@@ -1,7 +1,8 @@
 #!/bin/bash
 
 echo "Building the application..."
-cd сmd/api
+cd сmd
+cd api
 go mod tidy
 go build -o app main.go
 ./cmd/api/app
