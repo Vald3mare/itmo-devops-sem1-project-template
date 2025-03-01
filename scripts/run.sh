@@ -1,4 +1,5 @@
 #!/bin/bash
+ls -la
 echo "Building the application..."
 go build -o server cmd/server/main.go
 
