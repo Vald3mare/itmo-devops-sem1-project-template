@@ -14,12 +14,10 @@ func CreateCSVFromPrices(prices []myDB.Price) (*bytes.Buffer, error) {
 	var csvBuffer bytes.Buffer
 	writer := csv.NewWriter(&csvBuffer)
 
-	// Write CSV header
 	if err := writer.Write([]string{"id", "name", "category", "price", "create_date"}); err != nil {
 		return nil, fmt.Errorf("CSV header error: %w", err)
 	}
 
-	// Process prices
 	for _, price := range prices {
 		if err := writer.Write([]string{
 			price.ID,

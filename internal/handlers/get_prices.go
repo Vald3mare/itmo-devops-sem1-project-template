@@ -19,7 +19,6 @@ func HandlerGetPrices() http.HandlerFunc {
 			return
 		}
 
-		// Создаем CSV
 		csvBuffer, err := fileutils.CreateCSVFromPrices(prices)
 		if err != nil {
 			log.Printf("CSV creation error: %v", err)
@@ -27,7 +26,6 @@ func HandlerGetPrices() http.HandlerFunc {
 			return
 		}
 
-		// Создаем ZIP
 		zipBuffer, err := fileutils.CreateZipFromCSV(csvBuffer)
 		if err != nil {
 			log.Printf("ZIP creation error: %v", err)
@@ -35,7 +33,6 @@ func HandlerGetPrices() http.HandlerFunc {
 			return
 		}
 
-		// Отправляем ответ
 		w.Header().Set("Content-Type", "application/zip")
 		w.Header().Set("Content-Disposition", "attachment; filename=data.zip")
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", zipBuffer.Len()))
