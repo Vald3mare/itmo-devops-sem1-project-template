@@ -1,13 +1,14 @@
 package main
 
 import (
+	// сделал импорты через goimports
 	"net/http"
-	"project-sem/internal/handlers"
-	"project-sem/internal/myDB"
-
-	_ "github.com/lib/pq"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
+
+	"project-sem/internal/handlers"
+	"project-sem/internal/myDB"
 )
 
 func main() {
@@ -20,6 +21,7 @@ func run() error {
 	if err := myDB.InitDB(); err != nil {
 		return err
 	}
+	defer myDB.CloseDB()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/api/v0/prices", handlers.HandlerPostPrices()).Methods("POST")

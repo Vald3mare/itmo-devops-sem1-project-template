@@ -10,12 +10,12 @@ go mod download
 psql -h localhost -p 5432 -U validator -d project-sem-1 <<-EOSQL
 	DROP TABLE IF EXISTS prices;
 	CREATE TABLE prices (
-		id TEXT,
-		name TEXT,
-		category TEXT,
-		price NUMERIC,
-		create_date DATE
-	);
+			id SERIAL PRIMARY KEY,
+			name TEXT,
+			category TEXT,
+			price NUMERIC,
+			create_date TIMESTAMP
+		);
 	GRANT ALL PRIVILEGES ON TABLE prices TO validator;
 EOSQL
 

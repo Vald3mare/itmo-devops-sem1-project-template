@@ -5,11 +5,53 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
+
+// Price представляет структуру данных о товаре
+type Price struct {
+	ID         int64     `json:"id"`
+	Name       string    `json:"name"`
+	Category   string    `json:"category"`
+	Price      float64   `json:"price"`
+	CreateDate time.Time `json:"create_date"`
+}
+
+// InputPrice представляет структуру входных данных из файла
+type InputPrice struct {
+	Name       string
+	Category   string
+	Price      float64
+	CreateDate time.Time
+}
+
+// ParseInputPrice преобразует строковые данные в структуру InputPrice
+func ParseInputPrice(record []string) (InputPrice, error) {
+	if len(record) != 5 {
+		return InputPrice{}, fmt.Errorf("неверное количество полей: ожидается 5, получено %d", len(record))
+	}
+
+	price, err := strconv.ParseFloat(record[3], 64)
+	if err != nil {
+		return InputPrice{}, fmt.Errorf("ошибка преобразования цены: %w", err)
+	}
+
+	createDate, err := time.Parse("2006-01-02", record[4])
+	if err != nil {
+		return InputPrice{}, fmt.Errorf("ошибка преобразования даты: %w", err)
+	}
+
+	return InputPrice{
+		Name:       record[1],
+		Category:   record[2],
+		Price:      price,
+		CreateDate: createDate,
+	}, nil
+}
 
 // InitDB инициализирует подключение к базе данных
 func InitDB() error {
@@ -22,11 +64,11 @@ func InitDB() error {
 
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS prices (
-			id TEXT,
+			id SERIAL PRIMARY KEY,
 			name TEXT,
 			category TEXT,
 			price NUMERIC,
-			create_date DATE
+			create_date TIMESTAMP
 		)
 	`)
 	if err != nil {
@@ -36,75 +78,102 @@ func InitDB() error {
 	if err = db.Ping(); err != nil {
 		return fmt.Errorf("database ping failed: %w", err)
 	}
+	return nil
+}
 
+func CloseDB() error {
+	err := db.Close()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // InsertPrices вставляет данные в базу
-func InsertPrices(records [][]string) (int, int, float64, error) {
+func InsertPrices(records []InputPrice) (int, int, float64, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("transaction error: %w", err)
 	}
-	defer tx.Rollback()
 
 	stmt, err := tx.Prepare(`
-		INSERT INTO prices(id, name, category, price, create_date)
-		VALUES($1, $2, $3, $4, $5)
+		INSERT INTO prices(name, category, price, create_date)
+		VALUES($1, $2, $3, $4)
 	`)
 	if err != nil {
+		tx.Rollback()
 		return 0, 0, 0, fmt.Errorf("prepare error: %w", err)
 	}
 	defer stmt.Close()
 
-	totalItems := 0
-	categories := make(map[string]struct{})
-	var totalPrice float64
-
+	// Вставка записей
 	for _, record := range records {
-		if len(record) != 5 {
-			continue
-		}
-
-		price, err := strconv.ParseFloat(record[3], 64)
-		if err != nil {
-			continue
-		}
-
 		_, err = stmt.Exec(
-			record[0], // id
-			record[1], // name
-			record[2], // category
-			price,
-			record[4], // create_date
+			record.Name,
+			record.Category,
+			record.Price,
+			record.CreateDate,
 		)
 		if err != nil {
-			log.Printf("Insert error: %v", err)
-			continue
+			tx.Rollback()
+			return 0, 0, 0, fmt.Errorf("insert error: %w", err)
 		}
+	}
 
-		totalItems++
-		categories[record[2]] = struct{}{}
-		totalPrice += price
+	// Подсчет статистики
+	var totalItems int
+	var totalPrice float64
+	var uniqueCategories int
+
+	err = tx.QueryRow(`
+		SELECT 
+			COUNT(*) as total_items,
+			COUNT(DISTINCT category) as unique_categories,
+			COALESCE(SUM(price), 0) as total_price
+		FROM prices
+	`).Scan(&totalItems, &uniqueCategories, &totalPrice)
+	if err != nil {
+		tx.Rollback()
+		return 0, 0, 0, fmt.Errorf("statistics calculation error: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
+		tx.Rollback()
 		return 0, 0, 0, fmt.Errorf("commit error: %w", err)
 	}
 
-	return totalItems, len(categories), totalPrice, nil
+	return totalItems, uniqueCategories, totalPrice, nil
 }
 
-// GetAllPrices возвращает все записи
-func GetAllPrices() (*sql.Rows, error) {
-	return db.Query(`
+// GetAllPrices возвращает все записи в виде массива структур Price
+func GetAllPrices() ([]Price, error) {
+	rows, err := db.Query(`
 		SELECT 
 			id,
 			name,
 			category,
 			price,
-			TO_CHAR(create_date, 'YYYY-MM-DD')
+			create_date
 		FROM prices
 		ORDER BY id
 	`)
+	if err != nil {
+		return nil, fmt.Errorf("query error: %w", err)
+	}
+	defer rows.Close()
+
+	var prices []Price
+	for rows.Next() {
+		var p Price
+		if err := rows.Scan(&p.ID, &p.Name, &p.Category, &p.Price, &p.CreateDate); err != nil {
+			return nil, fmt.Errorf("scan error: %w", err)
+		}
+		prices = append(prices, p)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return prices, nil
 }
