@@ -20,11 +20,11 @@ func CreateCSVFromPrices(prices []myDB.Price) (*bytes.Buffer, error) {
 
 	for _, price := range prices {
 		if err := writer.Write([]string{
-			price.ID,
+			fmt.Sprintf("%d", price.ID),
 			price.Name,
 			price.Category,
 			fmt.Sprintf("%.2f", price.Price),
-			price.CreateDate,
+			price.CreateDate.Format("2006-01-02 15:04:05"),
 		}); err != nil {
 			log.Printf("CSV write error: %v", err)
 			continue

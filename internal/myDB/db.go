@@ -31,17 +31,17 @@ type InputPrice struct {
 // ParseInputPrice преобразует строковые данные в структуру InputPrice
 func ParseInputPrice(record []string) (InputPrice, error) {
 	if len(record) != 5 {
-		return InputPrice{}, fmt.Errorf("неверное количество полей: ожидается 5, получено %d", len(record))
+		return InputPrice{}, fmt.Errorf("incorrect number of fields: expected 5, got %d", len(record))
 	}
 
 	price, err := strconv.ParseFloat(record[3], 64)
 	if err != nil {
-		return InputPrice{}, fmt.Errorf("ошибка преобразования цены: %w", err)
+		return InputPrice{}, fmt.Errorf("price conversion error: %w", err)
 	}
 
 	createDate, err := time.Parse("2006-01-02", record[4])
 	if err != nil {
-		return InputPrice{}, fmt.Errorf("ошибка преобразования даты: %w", err)
+		return InputPrice{}, fmt.Errorf("date conversion error: %w", err)
 	}
 
 	return InputPrice{
