@@ -72,9 +72,8 @@ func HandlerPostPrices() http.HandlerFunc {
 			return
 		}
 
-		// Пропускаем заголовок и преобразуем записи в структуры InputPrice
 		var inputPrices []myDB.InputPrice
-		for i := 1; i < len(records); i++ { // Начинаем с 1, пропуская заголовок
+		for i := 1; i < len(records); i++ {
 			price, err := myDB.ParseInputPrice(records[i])
 			if err != nil {
 				http.Error(w, "Data parsing error: "+err.Error(), http.StatusBadRequest)
